@@ -16,3 +16,4 @@ futures = "0.3.27"
 async-trait = "0.1.68"
 # error handling
 anyhow = "1"
+axum = { version = "0.6.18", features = ["json"] }
