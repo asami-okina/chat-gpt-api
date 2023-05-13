@@ -1,23 +1,27 @@
-use axum::{extract::Path, response::Json};
+use axum::{extract::Query, response::Json};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::env;
 use std::fmt::Debug;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct FetchGptPath {
+pub struct FetchGptChatParams {
     content: String,
 }
 
-pub async fn handler_fetch_gpt(Path(path): Path<FetchGptPath>) -> Json<Value> {
+pub async fn handler_chat(Query(params): Query<HashMap<String, String>>) -> Json<Value> {
     let open_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY is not set");
-    let content = path.content;
-    let response = fetch_gpt(&open_api_key, &content).await.unwrap();
+    let content = match params.get("content") {
+        Some(content) => content,
+        None => panic!("content is not set"),
+    };
+    let response = chat(&open_api_key, &content).await.unwrap();
     Json(json!({ "response": response }))
 }
 
-async fn fetch_gpt(open_api_key: &str, content: &str) -> Result<ChatCompletion, anyhow::Error> {
+async fn chat(open_api_key: &str, content: &str) -> Result<ChatCompletion, anyhow::Error> {
     let client = Client::new();
     let url = "https://api.openai.com/v1/chat/completions";
     let request_body = json!({
@@ -36,7 +40,6 @@ async fn fetch_gpt(open_api_key: &str, content: &str) -> Result<ChatCompletion, 
         .text()
         .await?;
     let parsed_response = serde_json::from_str(&response)?;
-    println!("parsed_response: {:?}", parsed_response);
     Ok(parsed_response)
 }
 
